@@ -4,6 +4,7 @@ import numpy as np
 
 
 # Use music21 to parse midi files for notes and chords
+# XXX: Run on Google Cloud (free trial)
 def getAllSongs():
     notes = []
     for curr, _, files in os.walk('data'):
@@ -25,6 +26,7 @@ def getAllSongs():
                     notes.append('.'.join(str(n) for n in item.normalOrder))
     
     return notes
+    
 
 def open_midi(midi_path):
     mf = midi.MidiFile()
@@ -61,9 +63,9 @@ network_input = []
 network_output = []
 
 # Create input sequences
-for i in range(len(notes)):
+for i in range(len(notes) - seq_len):
     seq_in = notes[i:i+seq_len]
-    seq_out = notes[i:seq_len]
+    seq_out = notes[i+seq_len]
     network_input.append([note_to_int[nt] for nt in seq_in])
     network_output.append(note_to_int[seq_out])
 
