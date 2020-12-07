@@ -1,5 +1,6 @@
 import os
 from music21 import converter, instrument, note, chord, midi
+import numpy as np
 
 
 # Use music21 to parse midi files for notes and chords
@@ -52,5 +53,26 @@ n_pitches = len(pitchnames)
 # Make dictionary to map note pitches to integers
 note_to_int = dict((nt, num) for num, nt in enumerate(pitchnames))
 
+
+# TODO: experiment with different sequence lengths
+seq_len = 100
+
 network_input = []
 network_output = []
+
+# Create input sequences
+for i in range(len(notes)):
+    seq_in = notes[i:i+seq_len]
+    seq_out = notes[i:seq_len]
+    network_input.append([note_to_int[nt] for nt in seq_in])
+    network_output.append(note_to_int[seq_out])
+
+n_sequences = len(network_input)
+# Reshape input to LSTM compatible format
+network_input = np.reshape(network_input, (n_sequences, seq_len, 1))
+# Normalize input
+network_input = network_input /float(n_pitches)
+"""
+# one-hot-encoding output
+network_output = keras.utils.np_utils.to_categorical(network_output)
+"""
