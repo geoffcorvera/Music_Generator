@@ -26,7 +26,11 @@ def getAllSongs():
                     notes.append('.'.join(str(n) for n in item.normalOrder))
     
     return notes
-    
+
+# use 1-hot-encoding for categorical data (notes)
+def oneHotEncoding(values, nclasses):
+    return np.eye(nclasses)[values]
+
 
 def open_midi(midi_path):
     mf = midi.MidiFile()
@@ -74,7 +78,4 @@ n_sequences = len(network_input)
 network_input = np.reshape(network_input, (n_sequences, seq_len, 1))
 # Normalize input
 network_input = network_input /float(n_pitches)
-"""
-# one-hot-encoding output
-network_output = keras.utils.np_utils.to_categorical(network_output)
-"""
+network_output = oneHotEncoding(network_output, n_pitches)
