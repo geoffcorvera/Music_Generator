@@ -70,6 +70,21 @@ class LSTM:
             self.adam_params["v"+key] = np.zeros_like(self.params[key])
 
         self.smooth_loss = -np.log(1.0 / self.vocab_size) * self.seq_len
+    
+    def forward_step(self, x, h_prev, c_prev):
+        z = np.row_stack((h_prev, x))
+
+        f = self.sigmoid(np.dot(self.params["Wf"], z) + self.params["bf"])
+        i = self.sigmoid(np.dot(self.params["Wi"], z) + self.params["bi"])
+        c_bar = np.tanh(np.dot(self.params["Wc"], z) + self.params["bc"])
+
+        c = f * c_prev + i * c_bar
+        o = self.sigmoid(np.dot(self.params["Wo"], z) + self.params["bo"])
+        h = o * np.tanh(c)
+
+        v = np.dot(self.params["Wv"], h) + self.params["bv"]
+        y_hat = self.softmax(v)
+        return y_hat, v, h, o, c, c_bar, i, f, z
 
 # Configure activation functions to use for LSTM
 def sigmoid(self, X):
