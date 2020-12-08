@@ -1,6 +1,7 @@
 import os
 from music21 import converter, instrument, note, chord, midi
 import numpy as np
+from lstm import LSTM
 
 
 # Use music21 to parse midi files for notes and chords
