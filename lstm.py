@@ -1,6 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
+"""
 data = open('data/austen-pride-and-prejudice.txt', 'r', encoding='utf-8').read().lower()
 
 chars = set(data)
@@ -9,6 +10,7 @@ print(f'data has {len(data)} characters, {vocab_size} unique')
 
 char_to_idx = {w: i for i,w in enumerate(chars)}
 idx_to_char = {i: w for i,w in enumerate(chars)}
+"""
 
 # "Adam" optimiser
 # Xavier initialisation (involves random sampling)
@@ -100,7 +102,32 @@ class LSTM:
         dh += dh_next
 
         do = dh * np.tanh(c)
-        # XXX
+        da_o = do * o*(1-o)
+        self.grads["dWo"] += np.dot(da_o, z.T)
+        self.grads["dbo"] += da_o
+
+        dc = dh * o * (1-np.tanh(c)**2)
+        dc += dc_next
+
+        dc_bar = dc * i
+        da_c = dc_bar * (1 - c_bar**2)
+        self.grads["dWc"] += np.dot(da_c, z.T)
+        self.grads["dbc"] += da_c
+
+        di = dc * c_bar
+        da_i = di * i*(1-i)
+        self.grads["dWf"] += np.dot(da_f, z.T)
+        self.grads["dbf"] += da_f
+
+        dz = (np.dot(self.params["Wf"].T, da_f)
+            + np.dot(self.params["Wi"].T, da_i)
+            + np.dot(self.params["Wc"].T, da_c)
+            + np.dot(self.params["Wo"].T, da_o))
+        
+        dh_prev = dz[:self.n_h, :]
+        dc_prev = f * dc
+        return dh_prev, dc_prev
+
 
 # Configure activation functions to use for LSTM
 def sigmoid(self, X):
@@ -134,6 +161,3 @@ def update_params(self, batch_num):
         self.params[key] -= self.lr * m_coorrelated / (np.sqrt(v_correlated) + 1e-8)
 
 LSTM.update_params = update_params
-
-# Create LSTM instance
-lstm = LSTM(char_to_idx, idx_to_char, vocab_size)
