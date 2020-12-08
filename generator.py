@@ -43,7 +43,7 @@ def open_midi(midi_path):
 
 def getDebussy():
     notes = []
-    prefix = 'data/debussy'
+    prefix = 'data/test'
     for f in os.listdir(prefix):
         file = os.path.join(prefix, f)
         midi_stream = open_midi(file)
