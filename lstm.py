@@ -1,16 +1,12 @@
+"""
+Adapted from Christina Kouridi's blog post "Implementing a LSTM from scratch with Numpy":
+https://christinakouridi.blog/2019/06/20/vanilla-lstm-numpy/
+
+"""
 import numpy as np
 import matplotlib.pyplot as plt
 
-"""
-data = open('data/austen-pride-and-prejudice.txt', 'r', encoding='utf-8').read().lower()
 
-chars = set(data)
-vocab_size = len(chars)
-print(f'data has {len(data)} characters, {vocab_size} unique')
-
-char_to_idx = {w: i for i,w in enumerate(chars)}
-idx_to_char = {i: w for i,w in enumerate(chars)}
-"""
 
 # "Adam" optimiser
 # Xavier initialisation (involves random sampling)
@@ -116,6 +112,11 @@ class LSTM:
 
         di = dc * c_bar
         da_i = di * i*(1-i)
+        self.grads["dWi"] += np.dot(da_i, z.T)
+        self.grads["dbi"] += da_i
+
+        df = dc * c_prev
+        da_f = df * f*(1-f)
         self.grads["dWf"] += np.dot(da_f, z.T)
         self.grads["dbf"] += da_f
 
@@ -127,6 +128,87 @@ class LSTM:
         dh_prev = dz[:self.n_h, :]
         dc_prev = f * dc
         return dh_prev, dc_prev
+
+    # Executes forward and backward steps, iterating over all time-steps
+    # Cross entropy loss is calculated in forward phase.
+    # forward_backward exports cross entropy loss of the training batch,
+    # and hidden & cell states of the last layer (to feed into next LSTM
+    # input layer for next batch)
+    def forward_backward(self, x_batch, y_batch, h_prev, c_prev):
+        x, z = {}, {}
+        f, i, c_bar, c, o = {},{},{},{},{}
+        y_hat, v, h = {},{},{}
+
+        # Values at t=-1
+        h[-1] = h_prev
+        c[-1] = c_prev
+
+        loss = 0
+        for t in range(self.seq_len):
+            x[t] = np.zeros((self.vocab_size, 1))
+            x[t][x_batch[t]] = 1
+
+            y_hat[t], v[t], h[t], o[t], c[t], c_bar[t], i[t], f[t], z[t] = self.forward_step(x[t], h[t-1], c[t-1])
+
+            loss += -np.log(y_hat[t][y_batch[t],0])
+        
+        self.reset_grads()
+
+        dh_next = np.zeros_like(h[0])
+        dc_next = np.zeros_like(c[0])
+
+        for t in reversed(range(self.seq_len)):
+            dh_next, dc_next = self.back_step(y_batch[t], y_hat[t], dh_next,
+                                dc_next, c[t-1], z[t], f[t], i[t],
+                                c_bar[t], c[t], o[t], h[t])
+        
+        return loss, h[self.seq_len-1], c[self.seq_len-1]
+    
+
+    # Takes as input sequence of notes (X) and outputs a list of
+    # losses for each training batch (J) as well as the trained parameters
+    def train(self, X, verbose=True):
+        J = []  # to store losses
+        # use floor division to round to nearest whole number
+        num_batches = len(X) // self.seq_len
+        X_trimmed = X[:num_batches * self.seq_len]
+
+        for epoch in range(self.epochs):
+            h_prev = np.zeros((self.n_h, 1))
+            c_prev = np.zeros((self.n_h, 1))
+
+            for j in range(0, len(X_trimmed) - self.seq_len, self.seq_len):
+                # prepare batches
+                x_batch = [self.char_to_idx[ch] for ch in X_trimmed[j: j+self.seq_len]]
+                y_batch = [self.char_to_idx[ch] for ch in X_trimmed[j + 1: j + self.seq_len + 1]]
+
+                loss, h_prev, c_prev = self.forward_backward(x_batch, y_batch, h_prev, c_prev)
+
+                # smooth out loss and store in list
+                self.smooth_loss = self.smooth_loss * 0.999 + loss * 0.001
+                J.append(self.smooth_loss)
+                
+                """
+                # check gradients
+                if epoch == 0 and j == 0:
+                    self.gradient_check(x_batch, y_batch, h_prev, c_prev, num_checks=10, delta=1e-7)
+                """
+                
+                self.clip_grads()
+
+                batch_num = epoch * self.epochs + j / self.seq_len + 1
+                self.update_params(batch_num)
+
+                # Print loss and sample string
+                if verbose:
+                    if j % 400000 == 0:
+                        print(f"Epoch: {epoch}\tBatch: {j}-{j+self.seq_len}\tLoss {round(self.smooth_loss, 2)}")
+                        s = self.sample(h_prev, c_prev, sample_size=250)
+                        print(s)
+
+        return J, self.params
+
+    
 
 
 # Configure activation functions to use for LSTM
@@ -143,12 +225,17 @@ def softmax(self, X):
 LSTM.softmax = softmax
 
 # TODO: Clip gradients to address exploding gradients?
+def clip_grads(self):
+    for key in self.grads:
+        np.clip(self.grads[key], -5, 5, out=self.grads[key])
 
-def reset_gradients(self):
+LSTM.clip_grads = clip_grads
+
+def reset_grads(self):
     for key in self.grads:
         self.grads[key].fill(0)
 
-LSTM.reset_grads = reset_gradients
+LSTM.reset_grads = reset_grads
 
 # Update model weights with Adam optimizer
 def update_params(self, batch_num):
@@ -161,3 +248,42 @@ def update_params(self, batch_num):
         self.params[key] -= self.lr * m_coorrelated / (np.sqrt(v_correlated) + 1e-8)
 
 LSTM.update_params = update_params
+
+def sample(self, h_prev, c_prev, sample_size):
+    x = np.zeros((self.vocab_size, 1))
+    h = h_prev
+    c = c_prev
+    sample_string = ""
+
+    for t in range(sample_size):
+        y_hat, _, h, _, c, _, _, _, _ = self.forward_step(x, h, c)
+
+        idx = np.random.choice(range(self.vocab_size), p=y_hat.ravel())
+        x = np.zeros((self.vocab_size, 1))
+        x[idx] = 1
+
+        charNote = self.idx_to_char[idx]
+        sample_string += charNote
+    
+    return sample_string
+
+LSTM.sample = sample
+
+
+
+# """
+data = open('data/austen-pride-and-prejudice.txt', 'r', encoding='utf-8').read().lower()
+
+chars = set(data)
+vocab_size = len(chars)
+print(f'data has {len(data)} characters, {vocab_size} unique')
+
+char_to_idx = {w: i for i,w in enumerate(chars)}
+idx_to_char = {i: w for i,w in enumerate(chars)}
+# """
+model = LSTM(char_to_idx, idx_to_char, vocab_size, epochs=5, lr=0.01)
+J, params = model.train(data)
+
+plt.plot([i for i in range(len(J))], J)
+plt.xlabel("#training iterations")
+plt.ylabel("training loss")
