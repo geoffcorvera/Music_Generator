@@ -71,5 +71,38 @@ class LSTM:
 
         self.smooth_loss = -np.log(1.0 / self.vocab_size) * self.seq_len
 
+# Configure activation functions to use for LSTM
+def sigmoid(self, X):
+    return 1 / (1 + np.exp(-X))
+    
+LSTM.sigmoid = sigmoid
 
+
+def softmax(self, X):
+    e_x = np.exp(X - np.max(X))
+    return e_x / np.sum(e_x)
+
+LSTM.softmax = softmax
+
+# TODO: Clip gradients to address exploding gradients?
+
+def reset_gradients(self):
+    for key in self.grads:
+        self.grads[key].fill(0)
+
+LSTM.reset_grads = reset_gradients
+
+# Update model weights with Adam optimizer
+def update_params(self, batch_num):
+    for key in self.params:
+        self.adam_params["m"+key] = self.adam_params["m"+key] * self.beta1 + (1 - self.beta1) * self.grads["d"+key]
+        self.adam_params["v"+key] = self.adam_params["v"+key] * self.beta2 + (1 - self.beta2) * self.grads["d"+key]**2
+
+        m_coorrelated = self.adam_params["m"+key] / (1 - self.beta1**batch_num)
+        v_correlated = self.adam_params["v"+key] / (1 - self.beta2**batch_num)
+        self.params[key] -= self.lr * m_coorrelated / (np.sqrt(v_correlated) + 1e-8)
+
+LSTM.update_params = update_params
+
+# Create LSTM instance
 lstm = LSTM(char_to_idx, idx_to_char, vocab_size)
