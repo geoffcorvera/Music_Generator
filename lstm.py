@@ -71,6 +71,7 @@ class LSTM:
 
         self.smooth_loss = -np.log(1.0 / self.vocab_size) * self.seq_len
     
+    # Forward propagation for time-step
     def forward_step(self, x, h_prev, c_prev):
         z = np.row_stack((h_prev, x))
 
@@ -85,6 +86,21 @@ class LSTM:
         v = np.dot(self.params["Wv"], h) + self.params["bv"]
         y_hat = self.softmax(v)
         return y_hat, v, h, o, c, c_bar, i, f, z
+    
+
+    # Back propagation for time-step
+    def back_step(self, y, y_hat, dh_next, dc_next, c_prev, z, f, i, c_bar, c, o, h):
+        dv = np.copy(y_hat)
+        dv[y] -= 1 # yhat - y
+
+        self.grads["dWv"] += np.dot(dv, h.T)
+        self.grads["dbv"] += dv
+
+        dh = np.dot(self.params["Wv"].T, dv)
+        dh += dh_next
+
+        do = dh * np.tanh(c)
+        # XXX
 
 # Configure activation functions to use for LSTM
 def sigmoid(self, X):
