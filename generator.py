@@ -57,8 +57,9 @@ notes = getDebussy()
 pitchnames = sorted(set(item for item in notes))
 n_pitches = len(pitchnames)
 
-# Make dictionary to map note pitches to integers
+# Make dictionary to map note pitches to integers, and back
 note_to_int = dict((nt, num) for num, nt in enumerate(pitchnames))
+int_to_note = dict((num, nt) for num, nt in enumerate(pitchnames))
 
 
 # TODO: experiment with different sequence lengths
@@ -80,3 +81,5 @@ network_input = np.reshape(network_input, (n_sequences, seq_len, 1))
 # Normalize input
 network_input = network_input /float(n_pitches)
 network_output = oneHotEncoding(network_output, n_pitches)
+
+lstm = LSTM(note_to_int, int_to_note, n_pitches)
