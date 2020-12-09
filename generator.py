@@ -84,28 +84,6 @@ plt.ylabel('training loss')
 plt.show()
 
 
-def test():
-    # TODO: experiment with different sequence lengths
-    seq_len = 100
-
-    network_input = []
-    network_output = []
-
-    # Create input sequences
-    for i in range(len(notes) - seq_len):
-        seq_in = notes[i:i+seq_len]
-        seq_out = notes[i+seq_len]
-        network_input.append([note_to_int[nt] for nt in seq_in])
-        network_output.append(note_to_int[seq_out])
-
-    n_sequences = len(network_input)
-    # Reshape input to LSTM compatible format
-    network_input = np.reshape(network_input, (n_sequences, seq_len, 1))
-    # Normalize input
-    network_input = network_input /float(n_pitches)
-    network_output = oneHotEncoding(network_output, n_pitches)
-
-
 """
 data = open('data/austen-pride-and-prejudice.txt', 'r', encoding='utf-8').read().lower()
 
