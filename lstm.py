@@ -217,6 +217,12 @@ def sigmoid(self, X):
     
 LSTM.sigmoid = sigmoid
 
+# XXX: Does this enable having multiple notes on at a time?
+def thresholding(self, X):
+    activation = self.sigmoid(X)
+    return np.where(activation > 0.5, 1, 0)
+
+LSTM.thresholding = thresholding
 
 def softmax(self, X):
     e_x = np.exp(X - np.max(X))
