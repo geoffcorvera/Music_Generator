@@ -255,7 +255,7 @@ def sample(self, h_prev, c_prev, sample_size):
     c = c_prev
     sample_string = ""
 
-    for t in range(sample_size):
+    for _ in range(sample_size):
         y_hat, _, h, _, c, _, _, _, _ = self.forward_step(x, h, c)
 
         idx = np.random.choice(range(self.vocab_size), p=y_hat.ravel())
@@ -263,7 +263,7 @@ def sample(self, h_prev, c_prev, sample_size):
         x[idx] = 1
 
         charNote = self.idx_to_char[idx]
-        sample_string += charNote
+        sample_string += f"{charNote.fullName[0]}{charNote.fullName[-1]},"
     
     return sample_string
 
