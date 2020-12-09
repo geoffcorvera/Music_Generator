@@ -263,7 +263,7 @@ def sample(self, h_prev, c_prev, sample_size):
         x[idx] = 1
 
         charNote = self.idx_to_char[idx]
-        sample_string += f"{charNote.fullName[0]}{charNote.fullName[-1]},"
+        sample_string += charNote + ","
     
     return sample_string
 
