@@ -1,12 +1,11 @@
 import os
-from music21 import converter, instrument, note, chord
+from music21 import converter, instrument, note, chord, stream
 import numpy as np
 import matplotlib.pyplot as plt
 from lstm import LSTM
 
 
 # Use music21 to parse midi files for notes and chords
-# XXX: Run on Google Cloud (free trial)
 def getAllSongs():
     notes = []
     for curr, _, files in os.walk('data'):
@@ -83,21 +82,51 @@ plt.xlabel('#training iterations')
 plt.ylabel('training loss')
 plt.show()
 
+# Returns sequence of notes (Note & Chords)
+def generate_music(model, seed, hidden, state):
+    # Initial hidden activations, cell states, and input vector
+    h = np.zeros((model.n_h, 1))
+    c = np.zeros((model.n_h, 1))
+    x = np.zeros((model.vocab_size, 1))
+    id = np.random.choice((range(model.vocab_size)))
+    x[id] = 1
 
-"""
-data = open('data/austen-pride-and-prejudice.txt', 'r', encoding='utf-8').read().lower()
+    sample_size=50
+    generated_notes = []
 
-chars = set(data)
-vocab_size = len(chars)
-print(f'data has {len(data)} characters, {vocab_size} unique')
+    # Generate sequence of notes
+    for _ in range(sample_size):
+        y_hat, _, h, _, c, _, _, _, _ = model.forward_step(x, h, c)
 
-char_to_idx = {w: i for i,w in enumerate(chars)}
-idx_to_char = {i: w for i,w in enumerate(chars)}
+        # Select note to play
+        idx = np.random.choice(range(model.vocab_size), p=y_hat.ravel())
+        # Create input for next iteration
+        x = np.zeros((model.vocab_size, 1))
+        x[idx] = 1
 
-model = LSTM(char_to_idx, idx_to_char, vocab_size, epochs=5, lr=0.01)
-J, params = model.train(data)
+        generated_notes.append(model.idx_to_char[idx])
+    
+    return generated_notes
 
-plt.plot([i for i in range(len(J))], J)
-plt.xlabel("#training iterations")
-plt.ylabel("training loss")
-"""
+# Create initial states for model
+hidden = np.zeros((model.n_h, 1))
+state = np.zeros((model.n_h, 1))
+# Select one note to be "On" for initial input
+seed = np.zeros((model.vocab_size, 1))
+id = np.random.choice((range(model.vocab_size)))
+seed[id] = 1
+
+generated_notes = generate_music(model, seed, hidden, state)
+
+# Write midi file from notes
+s = stream.Stream()
+for nt in generated_notes:
+    if '.' in nt:
+        s.append(chord.Chord([pitch for pitch in nt.split('.')]))
+    else:
+        s.append(note.Note(nt, type='quarter'))
+
+s.show()
+path = s.write('midi', fp='output/song.mid')
+print(f"Song written to {path}")
+
