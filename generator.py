@@ -1,5 +1,5 @@
 import os
-from music21 import converter, instrument, note, chord, midi
+from music21 import converter, instrument, note, chord
 import numpy as np
 import matplotlib.pyplot as plt
 from lstm import LSTM
@@ -34,21 +34,27 @@ def oneHotEncoding(values, nclasses):
     return np.eye(nclasses)[values]
 
 
-def open_midi(midi_path):
-    mf = midi.MidiFile()
-    mf.open(midi_path)
-    mf.read()
-    mf.close()
-    return midi.translate.midiFileToStream(mf)
-
-
 def processTestMidi():
     notes = []
     prefix = 'data/test'
     for f in os.listdir(prefix):
         file = os.path.join(prefix, f)
-        midi_stream = open_midi(file)
-        notes = [nt.pitch for nt in midi_stream.flat.notes if isinstance(nt, note.Note)]
+        midi_stream = converter.parse(file)
+
+        notes_to_parse = None
+        parts = instrument.partitionByInstrument(midi_stream)
+        
+        if parts:
+            notes_to_parse = parts.recurse()
+        else:
+            notes_to_parse = midi_stream.flat.notes
+            # notes_to_parse = [nt.pitch for nt in midi_stream.flat.notes if isinstance(nt, note.Note)]
+
+        for item in notes_to_parse:
+            if isinstance(item, note.Note):
+                notes.append(str(item.pitch))
+            elif isinstance(item, chord.Chord):
+                notes.append('.'.join(str(n.pitch) for n in item.notes))
 
     return notes
 
@@ -68,7 +74,7 @@ error, params = model.train(notes)
 # Output trained model parameters
 # TODO: test
 for key in params:
-    filename = f"{str(key)}.csv"
+    filename = f"output/{str(key)}.csv"
     print(f'output {str(key)} to "output/{filename}"')
     np.savetxt(filename, params[key], delimiter=",")
 
