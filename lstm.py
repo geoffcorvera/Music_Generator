@@ -188,12 +188,6 @@ class LSTM:
                 self.smooth_loss = self.smooth_loss * 0.999 + loss * 0.001
                 J.append(self.smooth_loss)
                 
-                """
-                # check gradients
-                if epoch == 0 and j == 0:
-                    self.gradient_check(x_batch, y_batch, h_prev, c_prev, num_checks=10, delta=1e-7)
-                """
-                
                 self.clip_grads()
 
                 batch_num = epoch * self.epochs + j / self.seq_len + 1

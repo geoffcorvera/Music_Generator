@@ -38,21 +38,20 @@ def extract_notes(s):
 
     as_chords = s.chordify()
     notes = []
-    durations = []
 
     for i in as_chords.recurse():
         if isinstance(i, note.Note):
-            notes.append(str(i.pitch))
-            durations.append(i.duration.quarterLength)
+            p = str(i.pitch)
+            notes.append((p, i.duration.quarterLength))
         elif isinstance(i, chord.Chord):
-            notes.append('.'.join(str(n.pitch) for n in i.notes)) 
-            durations.append(i.duration.quarterLength)
+            ps = '.'.join(str(n.pitch) for n in i.notes)
+            notes.append((ps, i.duration.quarterLength))
 
-    return notes, durations
+    return notes
 
 
 # Returns sequence of notes (Note & Chords)
-def generate_music(model, seed, hidden, state):
+def generate_music(model, seed, hidden, state, length=100):
     # Initial hidden activations, cell states, and input vector
     h = np.zeros((model.n_h, 1))
     c = np.zeros((model.n_h, 1))
@@ -60,11 +59,10 @@ def generate_music(model, seed, hidden, state):
     id = np.random.choice((range(model.vocab_size)))
     x[id] = 1
 
-    sample_size=100
     generated_notes = []
 
     # Generate sequence of notes
-    for _ in range(sample_size):
+    for _ in range(length):
         y_hat, _, h, _, c, _, _, _, _ = model.forward_step(x, h, c)
 
         # Select note to play
@@ -82,12 +80,12 @@ def generate_music(model, seed, hidden, state):
 def export_midi(notes):
     s = stream.Stream()
     for nt in notes:
-        if '.' in nt:
-            s.append(chord.Chord([pitch for pitch in nt.split('.')]))
+        if '.' in nt[0]:
+            ps = [pitch for pitch in nt[0].split('.')]
+            s.append(chord.Chord(ps, quarterLength=nt[1]))
         else:
-            s.append(note.Note(nt, type='quarter'))
+            s.append(note.Note(nt[0], quarterLength=nt[1]))
 
-    s.show()
     try:
         o_file = sys.argv[1]
         filepath = 'output/' + o_file + '.mid'
@@ -101,19 +99,15 @@ def export_midi(notes):
 # Extract notes and durations from midi files
 folder = 'data/test'
 notes = []
-durations = []
 for f in os.listdir(folder):
     fp = os.path.join(folder, f)
     midi_stream = converter.parse(fp)
-    ns, ds = extract_notes(midi_stream)
+    ns = extract_notes(midi_stream)
     notes += ns
-    durations += ds
 
 # Get set of unique notes and durations
 unique_notes = set(n for n in notes)
 n_vocab = len(unique_notes)
-unique_durations = set(d for d in durations)
-n_durations = len(unique_durations)
 
 # notes = processTestMidi()
 # pitchnames = sorted(set(item for item in notes))
@@ -122,11 +116,9 @@ n_durations = len(unique_durations)
 # Create mappings between <note,int> and <duration,int>
 note_to_int = dict((nt, num) for num, nt in enumerate(unique_notes))
 int_to_note = dict((num, nt) for num, nt in enumerate(unique_notes))
-dur_to_int = dict((d,i) for i,d in enumerate(unique_durations))
-int_to_dur = dict((i,d) for i,d in enumerate(unique_durations))
 
 model = LSTM(note_to_int, int_to_note, n_vocab, epochs=80, lr=0.01)
-error, params = model.train(notes)
+error, params = model.train(notes, verbose=False)
 
 # Output trained model parameters
 for key in params:
@@ -147,7 +139,7 @@ seed = np.zeros((model.vocab_size, 1))
 id = np.random.choice((range(model.vocab_size)))
 seed[id] = 1
 
-song = generate_music(model, seed, hidden, state)
+song = generate_music(model, seed, hidden, state, length=256)
 export_midi(song)
 
         
