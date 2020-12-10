@@ -5,9 +5,6 @@ import matplotlib.pyplot as plt
 from lstm import LSTM
 
 
-
-
-
 # Use music21 to parse midi files for notes and chords
 def getAllSongs():
     notes = []
@@ -52,7 +49,6 @@ def extract_notes(s):
             durations.append(i.duration.quarterLength)
 
     return notes, durations
-
 
 
 # Returns sequence of notes (Note & Chords)
@@ -100,31 +96,6 @@ def export_midi(notes):
         path = s.write('midi', fp='output/song.mid')
 
     print(f"Song written to {path}")
-
-
-def processTestMidi():
-    notes = []
-    prefix = 'data/test'
-    for f in os.listdir(prefix):
-        file = os.path.join(prefix, f)
-        midi_stream = converter.parse(file)
-
-        notes_to_parse = None
-        parts = instrument.partitionByInstrument(midi_stream)
-        
-        if parts:
-            notes_to_parse = parts.recurse()
-        else:
-            notes_to_parse = midi_stream.flat.notes
-            # notes_to_parse = [nt.pitch for nt in midi_stream.flat.notes if isinstance(nt, note.Note)]
-
-        for item in notes_to_parse:
-            if isinstance(item, note.Note):
-                notes.append(str(item.pitch))
-            elif isinstance(item, chord.Chord):
-                notes.append('.'.join(str(n.pitch) for n in item.notes))
-
-    return notes
 
     
 # Extract notes and durations from midi files
