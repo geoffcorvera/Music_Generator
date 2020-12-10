@@ -60,6 +60,32 @@ def extract_notes(s):
     return notes, durations
 
 
+
+# Returns sequence of notes (Note & Chords)
+def generate_music(model, seed, hidden, state):
+    # Initial hidden activations, cell states, and input vector
+    h = np.zeros((model.n_h, 1))
+    c = np.zeros((model.n_h, 1))
+    x = np.zeros((model.vocab_size, 1))
+    id = np.random.choice((range(model.vocab_size)))
+    x[id] = 1
+
+    sample_size=100
+    generated_notes = []
+
+    # Generate sequence of notes
+    for _ in range(sample_size):
+        y_hat, _, h, _, c, _, _, _, _ = model.forward_step(x, h, c)
+
+        # Select note to play
+        idx = np.random.choice(range(model.vocab_size), p=y_hat.ravel())
+        # Create input for next iteration
+        x = np.zeros((model.vocab_size, 1))
+        x[idx] = 1
+
+        generated_notes.append(model.idx_to_char[idx])
+    
+    return generated_notes
 def processTestMidi():
     notes = []
     prefix = 'data/test'
