@@ -97,7 +97,7 @@ def export_midi(notes):
 
     
 # Extract notes and durations from midi files
-folder = 'data/debussy'
+folder = 'data/test'
 notes = []
 for f in os.listdir(folder):
     fp = os.path.join(folder, f)
