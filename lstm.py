@@ -82,8 +82,8 @@ class LSTM:
         h = o * np.tanh(c)
 
         v = np.dot(self.params["Wv"], h) + self.params["bv"]
-        # y_hat = self.softmax(v)
-        y_hat = self.thresholding(v)
+        y_hat = self.softmax(v)
+        # y_hat = self.thresholding(v)
         return y_hat, v, h, o, c, c_bar, i, f, z
     
 
@@ -175,6 +175,7 @@ class LSTM:
         X_trimmed = X[:num_batches * self.seq_len]
 
         for epoch in range(self.epochs):
+            print(f'Starting epoch: {epoch}')
             h_prev = np.zeros((self.n_h, 1))
             c_prev = np.zeros((self.n_h, 1))
 
@@ -263,7 +264,8 @@ def sample(self, h_prev, c_prev, sample_size):
         x[idx] = 1
 
         charNote = self.idx_to_char[idx]
-        sample_string += charNote + ","
+        sample_string += charNote
+        # sample_string += charNote + ","
     
     return sample_string
 
