@@ -5,6 +5,9 @@ import matplotlib.pyplot as plt
 from lstm import LSTM
 
 
+
+
+
 # Use music21 to parse midi files for notes and chords
 def getAllSongs():
     notes = []
@@ -28,9 +31,33 @@ def getAllSongs():
     
     return notes
 
-# use 1-hot-encoding for categorical data (notes)
-def oneHotEncoding(values, nclasses):
-    return np.eye(nclasses)[values]
+
+def parseMidi(dir, filename):
+    f = os.path.join(dir, filename)
+    return converter.parse(f)
+
+# Returns list of notes and list of durations
+def extract_notes(s):
+    """
+        parse file > .chordify
+        extract notes from it
+        If note.Note
+        elif note.Chord
+    """
+
+    as_chords = s.chordify()
+    notes = []
+    durations = []
+
+    for i in as_chords.recurse():
+        if isinstance(i, note.Note):
+            notes.append(str(i.pitch))
+            durations.append(i.duration.quarterLength)
+        elif isinstance(i, chord.Chord):
+            notes.append('.'.join(str(n.pitch) for n in i.notes)) 
+            durations.append(i.duration.quarterLength)
+
+    return notes, durations
 
 
 def processTestMidi():
@@ -58,16 +85,34 @@ def processTestMidi():
     return notes
 
     
-# Extract notes from Debussy folder
-notes = processTestMidi()
-pitchnames = sorted(set(item for item in notes))
-n_pitches = len(pitchnames)
+# Extract notes and durations from midi files
+folder = 'data/test'
+notes = []
+durations = []
+for f in os.listdir(folder):
+    fp = os.path.join(folder, f)
+    midi_stream = converter.parse(fp)
+    ns, ds = extract_notes(midi_stream)
+    notes += ns
+    durations += ds
 
-# Make dictionary to map note pitches to integers, and back
-note_to_int = dict((nt, num) for num, nt in enumerate(pitchnames))
-int_to_note = dict((num, nt) for num, nt in enumerate(pitchnames))
+# Get set of unique notes and durations
+unique_notes = set(n for n in notes)
+n_vocab = len(unique_notes)
+unique_durations = set(d for d in durations)
+n_durations = len(unique_durations)
 
-model = LSTM(note_to_int, int_to_note, n_pitches, epochs=100, lr=0.01)
+# notes = processTestMidi()
+# pitchnames = sorted(set(item for item in notes))
+# n_pitches = len(pitchnames)
+
+# Create mappings between <note,int> and <duration,int>
+note_to_int = dict((nt, num) for num, nt in enumerate(unique_notes))
+int_to_note = dict((num, nt) for num, nt in enumerate(unique_notes))
+dur_to_int = dict((d,i) for i,d in enumerate(unique_durations))
+int_to_dur = dict((i,d) for i,d in enumerate(unique_durations))
+
+model = LSTM(note_to_int, int_to_note, n_vocab, epochs=100, lr=0.01)
 error, params = model.train(notes)
 
 # Output trained model parameters
@@ -91,7 +136,7 @@ def generate_music(model, seed, hidden, state):
     id = np.random.choice((range(model.vocab_size)))
     x[id] = 1
 
-    sample_size=50
+    sample_size=100
     generated_notes = []
 
     # Generate sequence of notes
@@ -107,6 +152,7 @@ def generate_music(model, seed, hidden, state):
         generated_notes.append(model.idx_to_char[idx])
     
     return generated_notes
+
 
 # Create initial states for model
 hidden = np.zeros((model.n_h, 1))
