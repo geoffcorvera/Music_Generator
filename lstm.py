@@ -82,7 +82,8 @@ class LSTM:
         h = o * np.tanh(c)
 
         v = np.dot(self.params["Wv"], h) + self.params["bv"]
-        y_hat = self.softmax(v)
+        # y_hat = self.softmax(v)
+        y_hat = self.thresholding(v)
         return y_hat, v, h, o, c, c_bar, i, f, z
     
 
@@ -213,8 +214,7 @@ LSTM.sigmoid = sigmoid
 
 # XXX: Does this enable having multiple notes on at a time?
 def thresholding(self, X):
-    activation = self.sigmoid(X)
-    return np.where(activation > 0.5, 1, 0)
+    return np.where(X > 0.5, 1, 0)
 
 LSTM.thresholding = thresholding
 
