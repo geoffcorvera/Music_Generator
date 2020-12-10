@@ -21,7 +21,7 @@ import matplotlib.pyplot as plt
 
 class LSTM:
 
-    def __init__(self, char_to_idx, idx_to_char, vocab_size, n_h=100, seq_len=25, epochs=10, lr=0.01, beta1=0.9, beta2=0.999):
+    def __init__(self, char_to_idx, idx_to_char, vocab_size, n_h=100, seq_len=32, epochs=10, lr=0.01, beta1=0.9, beta2=0.999):
         self.char_to_idx = char_to_idx      # char/note to indices mapping
         self.idx_to_char = idx_to_char      # indices to char/note mapping
         self.vocab_size = vocab_size        # no. of classes/unique values in training data

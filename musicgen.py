@@ -92,7 +92,7 @@ n_vocab = len(unique_notes)
 note_to_int = dict((nt, num) for num, nt in enumerate(unique_notes))
 int_to_note = dict((num, nt) for num, nt in enumerate(unique_notes))
 
-model = LSTM(note_to_int, int_to_note, n_vocab, epochs=75, lr=0.01)
+model = LSTM(note_to_int, int_to_note, n_vocab, epochs=20, lr=0.01)
 error, params = model.train(notes, verbose=False)
 
 # Output trained model parameters
@@ -114,7 +114,7 @@ seed = np.zeros((model.vocab_size, 1))
 id = np.random.choice((range(model.vocab_size)))
 seed[id] = 1
 
-song = generate_music(model, seed, hidden, state, length=256)
+song = generate_music(model, seed, hidden, state, length=512)
 export_midi(song)
 
         
