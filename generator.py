@@ -1,4 +1,4 @@
-import os
+import os, sys
 from music21 import converter, instrument, note, chord, stream
 import numpy as np
 import matplotlib.pyplot as plt
@@ -38,12 +38,6 @@ def parseMidi(dir, filename):
 
 # Returns list of notes and list of durations
 def extract_notes(s):
-    """
-        parse file > .chordify
-        extract notes from it
-        If note.Note
-        elif note.Chord
-    """
 
     as_chords = s.chordify()
     notes = []
@@ -86,6 +80,28 @@ def generate_music(model, seed, hidden, state):
         generated_notes.append(model.idx_to_char[idx])
     
     return generated_notes
+
+
+# Write midi file from list notes & chords
+def export_midi(notes):
+    s = stream.Stream()
+    for nt in notes:
+        if '.' in nt:
+            s.append(chord.Chord([pitch for pitch in nt.split('.')]))
+        else:
+            s.append(note.Note(nt, type='quarter'))
+
+    s.show()
+    try:
+        o_file = sys.argv[1]
+        filepath = 'output/' + o_file + '.mid'
+        path = s.write('midi', fp=filepath)
+    except IndexError:
+        path = s.write('midi', fp='output/song.mid')
+
+    print(f"Song written to {path}")
+
+
 def processTestMidi():
     notes = []
     prefix = 'data/test'
@@ -138,11 +154,10 @@ int_to_note = dict((num, nt) for num, nt in enumerate(unique_notes))
 dur_to_int = dict((d,i) for i,d in enumerate(unique_durations))
 int_to_dur = dict((i,d) for i,d in enumerate(unique_durations))
 
-model = LSTM(note_to_int, int_to_note, n_vocab, epochs=100, lr=0.01)
+model = LSTM(note_to_int, int_to_note, n_vocab, epochs=80, lr=0.01)
 error, params = model.train(notes)
 
 # Output trained model parameters
-# TODO: test
 for key in params:
     filename = f"output/{str(key)}.csv"
     print(f'output {str(key)} to "output/{filename}"')
@@ -153,33 +168,6 @@ plt.xlabel('#training iterations')
 plt.ylabel('training loss')
 plt.show()
 
-# Returns sequence of notes (Note & Chords)
-def generate_music(model, seed, hidden, state):
-    # Initial hidden activations, cell states, and input vector
-    h = np.zeros((model.n_h, 1))
-    c = np.zeros((model.n_h, 1))
-    x = np.zeros((model.vocab_size, 1))
-    id = np.random.choice((range(model.vocab_size)))
-    x[id] = 1
-
-    sample_size=100
-    generated_notes = []
-
-    # Generate sequence of notes
-    for _ in range(sample_size):
-        y_hat, _, h, _, c, _, _, _, _ = model.forward_step(x, h, c)
-
-        # Select note to play
-        idx = np.random.choice(range(model.vocab_size), p=y_hat.ravel())
-        # Create input for next iteration
-        x = np.zeros((model.vocab_size, 1))
-        x[idx] = 1
-
-        generated_notes.append(model.idx_to_char[idx])
-    
-    return generated_notes
-
-
 # Create initial states for model
 hidden = np.zeros((model.n_h, 1))
 state = np.zeros((model.n_h, 1))
@@ -188,17 +176,7 @@ seed = np.zeros((model.vocab_size, 1))
 id = np.random.choice((range(model.vocab_size)))
 seed[id] = 1
 
-generated_notes = generate_music(model, seed, hidden, state)
+song = generate_music(model, seed, hidden, state)
+export_midi(song)
 
-# Write midi file from notes
-s = stream.Stream()
-for nt in generated_notes:
-    if '.' in nt:
-        s.append(chord.Chord([pitch for pitch in nt.split('.')]))
-    else:
-        s.append(note.Note(nt, type='quarter'))
-
-s.show()
-path = s.write('midi', fp='output/song.mid')
-print(f"Song written to {path}")
-
+        
