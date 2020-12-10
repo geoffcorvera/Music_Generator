@@ -1,7 +1,7 @@
 from lstm import LSTM
 import matplotlib.pyplot as plt
 
-data = open('data/austen-pride-and-prejudice.txt', 'r', encoding='utf-8').read().lower()
+data = open('data/hitchiker/guide.txt', 'r', encoding='utf-8').read().lower()
 
 chars = set(data)
 vocab_size = len(chars)
