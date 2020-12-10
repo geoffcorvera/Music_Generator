@@ -2,16 +2,15 @@ import os, sys
 from music21 import converter, note, chord, stream
 from music21 import instrument
 
-# Write midi file from list notes & chords
+# Write midi file from list notes/chords & their durations
 def export_midi(notes):
     s = stream.Stream()
     for nt in notes:
-        if '.' in nt:
-            s.append(chord.Chord([pitch for pitch in nt.split('.')]))
+        if '.' in nt[0]:
+            s.append(chord.Chord([pitch for pitch in nt[0].split('.')], quarterLength=nt[1]))
         else:
-            s.append(note.Note(nt, type='quarter'))
+            s.append(note.Note(nt[0], quarterLength=nt[1]))
 
-    s.show()
     try:
         o_file = sys.argv[1]
         filepath = 'output/' + o_file + '.mid'
@@ -39,9 +38,9 @@ for f in os.listdir(prefix):
 
     for item in notes_to_parse:
         if isinstance(item, note.Note):
-            notes.append(str(item.pitch))
+            notes.append((str(item.pitch), item.duration.quarterLength))
         elif isinstance(item, chord.Chord):
-            notes.append('.'.join(str(n.pitch) for n in item.notes))
-
+            pitches = '.'.join(str(n.pitch) for n in item.notes)
+            notes.append((pitches, item.duration.quarterLength))
 
 export_midi(notes)
