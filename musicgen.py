@@ -97,7 +97,7 @@ def export_midi(notes):
 
     
 # Extract notes and durations from midi files
-folder = 'data/test'
+folder = 'data/debussy'
 notes = []
 for f in os.listdir(folder):
     fp = os.path.join(folder, f)
@@ -117,7 +117,7 @@ n_vocab = len(unique_notes)
 note_to_int = dict((nt, num) for num, nt in enumerate(unique_notes))
 int_to_note = dict((num, nt) for num, nt in enumerate(unique_notes))
 
-model = LSTM(note_to_int, int_to_note, n_vocab, epochs=80, lr=0.01)
+model = LSTM(note_to_int, int_to_note, n_vocab, epochs=75, lr=0.01)
 error, params = model.train(notes, verbose=False)
 
 # Output trained model parameters
