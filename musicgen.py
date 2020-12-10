@@ -5,37 +5,13 @@ import matplotlib.pyplot as plt
 from lstm import LSTM
 
 
-# Use music21 to parse midi files for notes and chords
-def getAllSongs():
-    notes = []
-    for curr, _, files in os.walk('data'):
-        for f in files:
-            file = os.path.join(curr, f)
-            midi = converter.parse(file)
-
-            notes_to_parse = None
-            parts = instrument.partitionByInstrument(midi)
-            if parts:
-                notes_to_parse = parts.parts[0].recurse()
-            else:
-                notes_to_parse = midi.flat.notes
-            
-            for item in notes_to_parse:
-                if isinstance(item, note.Note):
-                    notes.append(str(item.pitch))
-                elif isinstance(item, chord.Chord):
-                    notes.append('.'.join(str(n) for n in item.normalOrder))
-    
-    return notes
-
-
 def parseMidi(dir, filename):
     f = os.path.join(dir, filename)
     return converter.parse(f)
 
+
 # Returns list of notes and list of durations
 def extract_notes(s):
-
     as_chords = s.chordify()
     notes = []
 
@@ -77,7 +53,7 @@ def generate_music(model, seed, hidden, state, length=100):
 
 
 # Write midi file from list notes & chords
-def export_midi(notes):
+def export_midi(notes, filename=None):
     s = stream.Stream()
     for nt in notes:
         if '.' in nt[0]:
@@ -86,12 +62,15 @@ def export_midi(notes):
         else:
             s.append(note.Note(nt[0], quarterLength=nt[1]))
 
-    try:
-        o_file = sys.argv[1]
-        filepath = 'output/' + o_file + '.mid'
-        path = s.write('midi', fp=filepath)
-    except IndexError:
-        path = s.write('midi', fp='output/song.mid')
+    if not filename:
+        try:
+            o_file = sys.argv[1]
+            filepath = 'output/' + o_file + '.mid'
+            path = s.write('midi', fp=filepath)
+        except IndexError:
+            path = s.write('midi', fp='output/song.mid')
+    else:
+        path = s.write('midi', fp='output/'+str(filename))
 
     print(f"Song written to {path}")
 
@@ -108,10 +87,6 @@ for f in os.listdir(folder):
 # Get set of unique notes and durations
 unique_notes = set(n for n in notes)
 n_vocab = len(unique_notes)
-
-# notes = processTestMidi()
-# pitchnames = sorted(set(item for item in notes))
-# n_pitches = len(pitchnames)
 
 # Create mappings between <note,int> and <duration,int>
 note_to_int = dict((nt, num) for num, nt in enumerate(unique_notes))
