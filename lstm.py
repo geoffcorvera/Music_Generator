@@ -178,7 +178,7 @@ class LSTM:
             h_prev = np.zeros((self.n_h, 1))
             c_prev = np.zeros((self.n_h, 1))
 
-            for j in range(num_batches):
+            for _ in range(num_batches):
                 j = np.random.choice(range(0, len(X_trimmed) - self.seq_len, self.seq_len))
                 # prepare batches
                 x_batch = [self.char_to_idx[ch] for ch in X_trimmed[j: j+self.seq_len]]
