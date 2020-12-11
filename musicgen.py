@@ -11,11 +11,15 @@ def parseMidi(dir, filename):
 
 
 # Returns list of notes and list of durations
-def extract_notes(s):
-    as_chords = s.chordify()
+# XXX: notes/chords that should be played at same time, are now in sequence
+def extract_notes(s, chordify=False):
+    if chordify:
+        allparts = s.chordify()
+    else:
+        allparts = s.flat
     notes = []
 
-    for i in as_chords.recurse():
+    for i in allparts:
         if isinstance(i, note.Note):
             p = str(i.pitch)
             notes.append((p, i.duration.quarterLength))
@@ -92,7 +96,7 @@ n_vocab = len(unique_notes)
 note_to_int = dict((nt, num) for num, nt in enumerate(unique_notes))
 int_to_note = dict((num, nt) for num, nt in enumerate(unique_notes))
 
-model = LSTM(note_to_int, int_to_note, n_vocab, epochs=20, lr=0.01)
+model = LSTM(note_to_int, int_to_note, n_vocab, epochs=10, lr=0.01)
 error, params = model.train(notes, verbose=False)
 
 # Output trained model parameters
