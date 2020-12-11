@@ -15,8 +15,8 @@ import matplotlib.pyplot as plt
     # and each bias of size [n_h, 1]
 
 
-# Activation Layer
-    # each category is a binary switch (thresholding at 0.5) to allow for multiple notes to be on at a time
+# TODO: Activation Layer: each category is a binary switch (thresholding at 0.5)
+#       to allow for multiple notes/chords to be on at a time.
 
 
 class LSTM:
@@ -82,8 +82,8 @@ class LSTM:
         h = o * np.tanh(c)
 
         v = np.dot(self.params["Wv"], h) + self.params["bv"]
-        y_hat = self.softmax(v)
-        # y_hat = self.thresholding(v)
+        # y_hat = self.softmax(v)
+        y_hat = self.thresholding(v)
         return y_hat, v, h, o, c, c_bar, i, f, z
     
 
@@ -250,6 +250,7 @@ def update_params(self, batch_num):
 
 LSTM.update_params = update_params
 
+# XXX: this is broken by 'threshold' activation layer
 def sample(self, h_prev, c_prev, sample_size):
     x = np.zeros((self.vocab_size, 1))
     h = h_prev
