@@ -7,7 +7,7 @@ from lstm import LSTM
 
 # Accepts music21 stream object as input.
 # Returns dictionary mapping timestep, t, to notes played during t
-def extract_notes(s):
+def get_performance(s):
     allparts = s.flat
     notes = dict()
 
@@ -56,6 +56,7 @@ def export_midi(performance, filename=None):
     print(f"Song written to {path}")
 
 # Returns sequence of notes (Note & Chords)
+# XXX: Refactor output to dictionary (time->notes/chords)
 def generate_music(model, seed, hidden, state, length=100):
     # Initial hidden activations, cell states, and input vector
     h = np.zeros((model.n_h, 1))
@@ -64,10 +65,10 @@ def generate_music(model, seed, hidden, state, length=100):
     id = np.random.choice((range(model.vocab_size)))
     x[id] = 1
 
-    generated_notes = []
+    generated_notes = dict()
 
     # Generate sequence of notes
-    for _ in range(length):
+    for t in range(length):
         y_hat, _, h, _, c, _, _, _, _ = model.forward_step(x, h, c)
 
         # Select note to play
@@ -76,27 +77,39 @@ def generate_music(model, seed, hidden, state, length=100):
         x = np.zeros((model.vocab_size, 1))
         x[idx] = 1
 
-        generated_notes.append(model.idx_to_char[idx])
+        generated_notes[t](model.idx_to_char[idx])
     
     return generated_notes
 
-    
+def note_sequence(d):
+    n = []
+    for t in d:
+        notes = d[t]
+        n.append(notes)
+    return n
+
+flatten = lambda t: [item for sublist in t for item in sublist]
+
 # Extract notes and durations from midi files
 folder = 'data/test'
 notes = []
 for f in os.listdir(folder):
     fp = os.path.join(folder, f)
     midi_stream = converter.parse(fp)
-    ns = extract_notes(midi_stream)
+    perf = get_performance(midi_stream)
+    ns = note_sequence(perf)
     notes += ns
 
 # Get set of unique notes and durations
-unique_notes = set(n for n in notes)
+unique_notes = set(n for n in flatten(notes))
 n_vocab = len(unique_notes)
 
 # Create mappings between <note,int> and <duration,int>
 note_to_int = dict((nt, num) for num, nt in enumerate(unique_notes))
 int_to_note = dict((num, nt) for num, nt in enumerate(unique_notes))
+
+# XXX: Construct input vectors
+
 
 model = LSTM(note_to_int, int_to_note, n_vocab, epochs=10, lr=0.01)
 error, params = model.train(notes, verbose=False)
