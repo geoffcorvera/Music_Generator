@@ -5,30 +5,55 @@ import matplotlib.pyplot as plt
 from lstm import LSTM
 
 
-def parseMidi(dir, filename):
-    f = os.path.join(dir, filename)
-    return converter.parse(f)
+# Accepts music21 stream object as input.
+# Returns dictionary mapping timestep, t, to notes played during t
+def extract_notes(s):
+    allparts = s.flat
+    notes = dict()
 
-
-# Returns list of notes and list of durations
-# XXX: notes/chords that should be played at same time, are now in sequence
-def extract_notes(s, chordify=False):
-    if chordify:
-        allparts = s.chordify()
-    else:
-        allparts = s.flat
-    notes = []
-
+    # TODO: compare offset, if same, add to list
     for i in allparts:
+        t = i.offset
+        d = i.duration.quarterLength
+        if t not in notes:
+            notes[t] = []
+
         if isinstance(i, note.Note):
-            p = str(i.pitch)
-            notes.append((p, i.duration.quarterLength))
+            notes[t].append((str(i.pitch), d))
         elif isinstance(i, chord.Chord):
             ps = '.'.join(str(n.pitch) for n in i.notes)
-            notes.append((ps, i.duration.quarterLength))
+            notes[t].append((ps,d))
 
     return notes
 
+# Accepts dictionary mapping notes played to their timesteps
+# Writes a midi file with provided filename.
+def export_midi(performance, filename=None):
+    s = stream.Stream()
+
+    for t in performance:
+        # Get notes/chords played at timestep t
+        notes = performance[t]
+
+        for n in notes:
+            if '.' in n[0]:
+                ps = [pitch for pitch in n[0].split('.')]
+                ch = chord.Chord(ps, quarterLength=n[1])
+                s.insert(t, ch)
+            else:
+                s.insert(t, note.Note(n[0], quarterLength=n[1]))
+
+    if not filename:
+        try:
+            o_file = sys.argv[1]
+            filepath = 'output/' + o_file + '.mid'
+            path = s.write('midi', fp=filepath)
+        except IndexError:
+            path = s.write('midi', fp='output/song.mid')
+    else:
+        path = s.write('midi', fp='output/'+str(filename))
+
+    print(f"Song written to {path}")
 
 # Returns sequence of notes (Note & Chords)
 def generate_music(model, seed, hidden, state, length=100):
@@ -54,29 +79,6 @@ def generate_music(model, seed, hidden, state, length=100):
         generated_notes.append(model.idx_to_char[idx])
     
     return generated_notes
-
-
-# Write midi file from list notes & chords
-def export_midi(notes, filename=None):
-    s = stream.Stream()
-    for nt in notes:
-        if '.' in nt[0]:
-            ps = [pitch for pitch in nt[0].split('.')]
-            s.append(chord.Chord(ps, quarterLength=nt[1]))
-        else:
-            s.append(note.Note(nt[0], quarterLength=nt[1]))
-
-    if not filename:
-        try:
-            o_file = sys.argv[1]
-            filepath = 'output/' + o_file + '.mid'
-            path = s.write('midi', fp=filepath)
-        except IndexError:
-            path = s.write('midi', fp='output/song.mid')
-    else:
-        path = s.write('midi', fp='output/'+str(filename))
-
-    print(f"Song written to {path}")
 
     
 # Extract notes and durations from midi files
