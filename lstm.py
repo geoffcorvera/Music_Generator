@@ -26,7 +26,7 @@ def write_file(data, fp):
 
 class LSTM:
 
-    def __init__(self, char_to_idx, idx_to_char, vocab_size, n_h=100, seq_len=25, epochs=10, lr=0.01, beta1=0.9, beta2=0.999):
+    def __init__(self, char_to_idx, idx_to_char, vocab_size, n_h=100, seq_len=25, epochs=10, lr=0.01, beta1=0.9, beta2=0.999, params=None):
         self.char_to_idx = char_to_idx      # char/note to indices mapping
         self.idx_to_char = idx_to_char      # indices to char/note mapping
         self.vocab_size = vocab_size        # no. of classes/unique values in training data
@@ -36,32 +36,37 @@ class LSTM:
         self.lr = lr                        # learning rate
         self.beta1 = beta1                  # 1st momentum param
         self.beta2 = beta2                  # 2nd momentum param
-    
+
+
         # Initialise weights & biases
-        self.param = {}
-        std = (1.0/np.sqrt(self.vocab_size + self.n_h))     # Xavier initialisation
-
-        # Forget gate
         self.params = {}
-        self.params["Wf"] = np.random.randn(self.n_h, self.n_h + self.vocab_size) * std
-        self.params["bf"] = np.ones((self.n_h, 1))
+        if not params:
+            std = (1.0/np.sqrt(self.vocab_size + self.n_h))     # Xavier initialisation
 
-        # Input gate
-        self.params["Wi"] = np.random.randn(self.n_h, self.n_h + self.vocab_size) * std
-        self.params["bi"] = np.ones((self.n_h, 1))
+            # Forget gate
+            self.params = {}
+            self.params["Wf"] = np.random.randn(self.n_h, self.n_h + self.vocab_size) * std
+            self.params["bf"] = np.ones((self.n_h, 1))
 
-        # Cell gate
-        self.params["Wc"] = np.random.randn(self.n_h, self.n_h + self.vocab_size) * std
-        self.params["bc"] = np.zeros((self.n_h, 1))
+            # Input gate
+            self.params["Wi"] = np.random.randn(self.n_h, self.n_h + self.vocab_size) * std
+            self.params["bi"] = np.ones((self.n_h, 1))
 
-        # Output gate
-        self.params["Wo"] = np.random.randn(self.n_h, self.n_h + self.vocab_size) * std
-        self.params["bo"] = np.zeros((self.n_h, 1))
+            # Cell gate
+            self.params["Wc"] = np.random.randn(self.n_h, self.n_h + self.vocab_size) * std
+            self.params["bc"] = np.zeros((self.n_h, 1))
 
-        # Output
-        # XXX: re-examine output activations
-        self.params["Wv"] = np.random.randn(self.vocab_size, self.n_h) * (1.0/np.sqrt(self.vocab_size))
-        self.params["bv"] = np.zeros((self.vocab_size, 1))
+            # Output gate
+            self.params["Wo"] = np.random.randn(self.n_h, self.n_h + self.vocab_size) * std
+            self.params["bo"] = np.zeros((self.n_h, 1))
+
+            # Output
+            # XXX: re-examine output activations
+            self.params["Wv"] = np.random.randn(self.vocab_size, self.n_h) * (1.0/np.sqrt(self.vocab_size))
+            self.params["bv"] = np.zeros((self.vocab_size, 1))
+        else:
+            for key in params:
+                self.params[key] = np.copy(params[key])
 
         # Initialise gradients and Adam parameters
         self.grads = {}
@@ -206,7 +211,7 @@ class LSTM:
                         fname = f"training/samples/{epoch}-{j}.txt"
                         write_file(s, fname)
                         print(f'wrote sample: {fname}')
-                        
+
                 if j % 400000 == 0:
                     # Periodically export parameters
                     self.export_params(f'training')
