@@ -1,3 +1,10 @@
+"""
+Description: Trains an LSTM model on Trump speeches, and outputs sample generateed
+text to training/samples/ directory, and learned parameters to training/
+
+Usage: python3 textgen.py <training text> <no. epochs> <output directory name>
+"""
+
 import numpy as np
 import matplotlib.pyplot as plt
 from os import path
@@ -12,6 +19,7 @@ def make_speech(model, length=1000):
 fp = sys.argv[1]
 data = open(fp, 'r', encoding="utf-8").read().lower()
 nepochs = int(sys.argv[2])
+dir_out = sys.argv[3]
 
 chars = set(data)
 vocab_size = len(chars)
@@ -27,7 +35,7 @@ J, params = model.train(data)
 for i in range(5):
     print(f'Generating speech: {i+1}')
     s = make_speech(model)
-    fp = path.join('output','speeches-lr001-epoch30', f'speech-{i+1}.txt')
+    fp = path.join('output', dir_out, f'speech-{i+1}.txt')
     fout = open(fp, 'w')
     fout.write(s)
     fout.close()
