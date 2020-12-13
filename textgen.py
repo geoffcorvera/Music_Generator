@@ -27,7 +27,7 @@ J, params = model.train(data)
 for i in range(5):
     print(f'Generating speech: {i+1}')
     s = make_speech(model)
-    fp = path.join('output/speeches-lr001-epoch30', f'speech-{i+1}.txt')
+    fp = path.join('output','speeches-lr001-epoch30', f'speech-{i+1}.txt')
     fout = open(fp, 'w')
     fout.write(s)
     fout.close()

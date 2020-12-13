@@ -284,9 +284,9 @@ def sample(self, h_prev, c_prev, sample_size):
 LSTM.sample = sample
 
 def export_params(self, to_dir):
+    print(f'Parameters saved in {to_dir}/')
     for key in self.params:
         filename = f"{to_dir}/{str(key)}.csv"
-        print(f'output {str(key)} to "{filename}"')
         np.savetxt(filename, self.params[key], delimiter=",")
 
 LSTM.export_params = export_params
