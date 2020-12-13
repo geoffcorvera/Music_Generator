@@ -18,6 +18,11 @@ import matplotlib.pyplot as plt
 # Activation Layer
     # each category is a binary switch (thresholding at 0.5) to allow for multiple notes to be on at a time
 
+def write_file(data, fp):
+    fout = open(fp, 'w', encoding='utf-8')
+    fout.write(data)
+    fout.close()
+
 
 class LSTM:
 
@@ -197,12 +202,12 @@ class LSTM:
                 if verbose:
                     if j % 400000 == 0:
                         print(f"Epoch: {epoch}\tBatch: {j}-{j+self.seq_len}\tLoss {round(self.smooth_loss, 2)}")
-                        s = self.sample(h_prev, c_prev, sample_size=250)
-                        print(s)
+                        s = self.sample(h_prev, c_prev, sample_size=500)
+                        fname = f"speeches/{epoch}-{j}.txt"
+                        write_file(s, fname)
+                        print(f'wrote sample: {fname}')
 
         return J, self.params
-
-    
 
 
 # Configure activation functions to use for LSTM
