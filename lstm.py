@@ -203,9 +203,13 @@ class LSTM:
                     if j % 400000 == 0:
                         print(f"Epoch: {epoch}\tBatch: {j}-{j+self.seq_len}\tLoss {round(self.smooth_loss, 2)}")
                         s = self.sample(h_prev, c_prev, sample_size=500)
-                        fname = f"speeches/{epoch}-{j}.txt"
+                        fname = f"training/samples/{epoch}-{j}.txt"
                         write_file(s, fname)
                         print(f'wrote sample: {fname}')
+                        
+                if j % 400000 == 0:
+                    # Periodically export parameters
+                    self.export_params(f'training')
 
         return J, self.params
 
@@ -273,3 +277,11 @@ def sample(self, h_prev, c_prev, sample_size):
     return sample_string
 
 LSTM.sample = sample
+
+def export_params(self, to_dir):
+    for key in self.params:
+        filename = f"{to_dir}/{str(key)}.csv"
+        print(f'output {str(key)} to "{filename}"')
+        np.savetxt(filename, self.params[key], delimiter=",")
+
+LSTM.export_params = export_params
