@@ -1,5 +1,6 @@
 data/
 output/
 speeches/
+training/
 .vscode
 __pycache__
