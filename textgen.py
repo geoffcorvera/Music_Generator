@@ -20,14 +20,14 @@ print(f'data has {len(data)} characters, {vocab_size} unique')
 char_to_idx = {w: i for i,w in enumerate(chars)}
 idx_to_char = {i: w for i,w in enumerate(chars)}
 
-model = LSTM(char_to_idx, idx_to_char, vocab_size, epochs=nepochs, lr=0.01, seq_len=50)
+model = LSTM(char_to_idx, idx_to_char, vocab_size, epochs=nepochs, lr=0.001, seq_len=50)
 J, params = model.train(data)
 
 # Make speeches
 for i in range(5):
     print(f'Generating speech: {i+1}')
     s = make_speech(model)
-    fp = path.join('output', f'speech-{i+1}.txt')
+    fp = path.join('output/speeches-lr001-epoch30', f'speech-{i+1}.txt')
     fout = open(fp, 'w')
     fout.write(s)
     fout.close()
